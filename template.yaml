@@ -1,0 +1,678 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: This SAM template creates Amazon Q Business ai ops chatbot application with custom plugin.
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 29
+    MemorySize: 256
+
+Resources:
+  AIOpsAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: dev
+
+  FindS3BucketsWithPublicAccessFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: FindS3BucketsWithPublicAccessFunction
+      Description: This function finds S3 buckets with public access
+      CodeUri: src/find-s3-bucket-with-public-access
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.12
+      Architectures:
+        - arm64
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action: 
+                - 's3:ListAllMyBuckets'
+                - 's3:GetBucketLocation'
+                - 's3:GetBucketPolicy'
+                - 's3:GetBucketPolicyStatus'
+                - 's3:GetBucketPublicAccessBlock'
+                - 's3:GetAccountPublicAccessBlock'
+              Resource: !Sub 'arn:aws:s3:::*'      
+      Events:
+        GenerateContent:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /find-s3-bucket-with-public-access
+            Method: post
+            RestApiId:
+              Ref: AIOpsAPI
+
+  RemovePublicAcessFromS3BucketFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: RemovePublicAcessFromS3BucketFunction
+      Description: This function removes public access from an S3 bucket
+      CodeUri: src/remove-public-access-from-s3-bucket
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.12
+      Architectures:
+        - arm64
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action: 
+                - 's3:GetBucketPublicAccessBlock'
+                - 's3:PutBucketPublicAccessBlock'
+                - 's3:GetBucketPolicy'
+                - 's3:PutBucketPolicy'
+                - 's3:DeleteBucketPolicy'
+                - 's3:ListAllMyBuckets'
+              Resource: 'arn:aws:s3:::*'
+      Events:
+        GenerateContent:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /remove-public-access-from-s3-bucket
+            Method: post
+            RestApiId:
+              Ref: AIOpsAPI
+
+  FindEC2WithSpecificOpenPortFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: FindEC2WithSpecificOpenPortFunction
+      Description: This function finds EC2 instances with a specific open port
+      CodeUri: src/find-ec2-with-specific-open-port
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.12
+      Architectures:
+        - arm64
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action: 
+                - 'ec2:DescribeInstances'
+                - 'ec2:DescribeSecurityGroups'
+                - 'ec2:DescribeSecurityGroupRules'
+              Resource: '*'
+              Condition:
+                StringEquals:
+                  'aws:RequestedRegion': !Ref 'AWS::Region'
+      Events:
+        GenerateContent:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /find-ec2-with-specific-open-port
+            Method: get
+            RestApiId:
+              Ref: AIOpsAPI
+
+  CloseUnwantedPortForEC2Function:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      FunctionName: CloseUnwantedPortForEC2Function
+      Description: This function closes unwanted ports for EC2 instances
+      CodeUri: src/close-unwanted-port-for-ec2
+      Handler: lambda_function.lambda_handler
+      Runtime: python3.12
+      Architectures:
+        - arm64
+      Policies:
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action: 
+                - 'ec2:DescribeInstances'
+                - 'ec2:DescribeSecurityGroups'
+                - 'ec2:DescribeSecurityGroupRules'
+              Resource: '*'
+              Condition:
+                StringEquals:
+                  'aws:RequestedRegion': !Ref 'AWS::Region'
+            - Effect: Allow
+              Action:
+                - 'ec2:RevokeSecurityGroupIngress'
+                - 'ec2:UpdateSecurityGroupRuleDescriptionsIngress'
+              Resource: !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/*'
+      Events:
+        GenerateContent:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /close-unwanted-port-for-ec2
+            Method: post
+            RestApiId:
+              Ref: AIOpsAPI
+
+
+  QBusinessApp:
+    Type: AWS::QBusiness::Application
+    Properties:
+      Description: AIOps Demo App
+      DisplayName: AIOps
+      AutoSubscriptionConfiguration:
+        AutoSubscribe: ENABLED
+        DefaultSubscriptionType: Q_LITE
+      IdentityCenterInstanceArn: arn:aws:sso:::instance/ssoins-72238235d6cbbb64
+      RoleArn: !GetAtt QBusinessAppRole.Arn
+      Tags:
+        - Key: "Environment"
+          Value: "Dev"
+        - Key: "Application"
+          Value: "AIOps"
+
+
+  QBusinessAppRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "qbusiness.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        - PolicyName: "QBusinessAppPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action: "*"
+                Resource: "*"
+        - PolicyName: "QBusinessCreateLogGroupPermission"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action: "logs:CreateLogGroup"
+                Resource: "arn:aws:logs:*:*:log-group:/aws/qbusiness/*"
+                Condition:
+                  StringEquals:
+                    "aws:ResourceAccount": "${aws:PrincipalAccount}"
+        - PolicyName: "QBusinessDescribeLogGroupsPermission"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action: "logs:DescribeLogGroups"
+                Resource: "arn:aws:logs:*:*:log-group:*"
+        - PolicyName: "QBusinessLogStreamPermission"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action: 
+                  - "logs:PutLogEvents"
+                  - "logs:CreateLogStream"
+                  - "logs:DescribeLogStreams"
+                Resource: "arn:aws:logs:*:*:log-group:/aws/qbusiness/*:log-stream:*"
+                Condition:
+                  StringEquals:
+                    "aws:ResourceAccount": "${aws:PrincipalAccount}"
+
+  QBusinessWebExperience:
+    Type: AWS::QBusiness::WebExperience
+    Properties:
+        ApplicationId: !Ref QBusinessApp
+        RoleArn: !GetAtt QBusinessWebExperienceRole.Arn
+        SamplePromptsControlMode: ENABLED
+        Title: "AIOps Chatbot"
+        WelcomeMessage: "Welcome to AIOps Chatbot. How can I help you?"
+
+
+  QBusinessWebExperienceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "application.qbusiness.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+              - "sts:SetContext"
+      Policies:
+        - PolicyName: "QBusinessConversationPermission"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action: 
+                  - "logs:CreateLogGroup"
+                  - "qbusiness:Chat"
+                  - "qbusiness:ChatSync"
+                  - "qbusiness:ListMessages"
+                  - "qbusiness:ListConversations"
+                  - "qbusiness:DeleteConversation"
+                  - "qbusiness:PutFeedback"
+                  - "qbusiness:GetWebExperience"
+                  - "qbusiness:GetApplication"
+                  - "qbusiness:ListPlugins"
+                  - "qbusiness:GetChatControlsConfiguration"
+                  - "qbusiness:ListRetrievers"
+                Resource: "*"
+        - PolicyName: "QBusinessRetrieverPermission"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action: "qbusiness:GetRetriever"
+                Resource: "*"
+        - PolicyName: "QBusinessKMSDecryptPermissions"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action: 
+                  - "kms:Decrypt"
+                Resource: "*"
+        - PolicyName: "QAppsResourceAgnosticPermissions"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action: 
+                  - "qapps:CreateQApp"
+                  - "qapps:PredictQApp"
+                  - "qapps:PredictProblemStatementFromConversation"
+                  - "qapps:PredictQAppFromProblemStatement"
+                  - "qapps:ListQApps"
+                  - "qapps:ListLibraryItems"
+                  - "qapps:CreateSubscriptionToken"
+                Resource: "*"
+        - PolicyName: "QAppsAppUniversalPermissions"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action: 
+                  - "qapps:DisassociateQAppFromUser"
+                Resource: "*"    
+        - PolicyName: "QAppsAppOwnerPermissions"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "qapps:GetQApp"
+                  - "qapps:CopyQApp"
+                  - "qapps:UpdateQApp"
+                  - "qapps:DeleteQApp"
+                  - "qapps:ImportDocument"
+                  - "qapps:ImportDocumentToQApp"
+                  - "qapps:CreateLibraryItem"
+                  - "qapps:UpdateLibraryItem"
+                  - "qapps:StartQAppSession"
+                Resource: "*"    
+        - PolicyName: "QAppsPublishedAppPermissions"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "qapps:GetQApp"
+                  - "qapps:CopyQApp"
+                  - "qapps:AssociateQAppWithUser"
+                  - "qapps:GetLibraryItem"
+                  - "qapps:CreateLibraryItemReview"
+                  - "qapps:AssociateLibraryItemReview"
+                  - "qapps:DisassociateLibraryItemReview"
+                  - "qapps:StartQAppSession"
+                Resource: "*"  
+        - PolicyName: "QAppsAppSessionModeratorPermissions"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "qapps:ImportDocument"
+                  - "qapps:ImportDocumentToQAppSession"
+                  - "qapps:GetQAppSession"
+                  - "qapps:GetQAppSessionMetadata"
+                  - "qapps:UpdateQAppSession"
+                  - "qapps:UpdateQAppSessionMetadata"
+                  - "qapps:StopQAppSession"
+                Resource: "*"  
+        - PolicyName: "QAppsSharedAppSessionPermissions"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "qapps:ImportDocument"
+                  - "qapps:ImportDocumentToQAppSession"
+                  - "qapps:GetQAppSession"
+                  - "qapps:GetQAppSessionMetadata"
+                  - "qapps:UpdateQAppSession"
+                Resource: "*"  
+  QBusinessCustomPlugin:            
+    Type: AWS::QBusiness::Plugin
+    Properties:
+      ApplicationId: !Ref QBusinessApp
+      AuthConfiguration: 
+        NoAuthConfiguration: {}
+      CustomPluginConfiguration: 
+        ApiSchema: 
+            Payload: !Sub |-
+              {
+                "openapi": "3.0.0",
+                "info": {
+                    "title": "AI Ops Plugin - This Plugin is to help with identifying Amazon EC2 instances with unwanted open ports and close them, identify and fix Amazon S3 Buckets with Public Access etc",
+                    "version": "1.0.0"
+                },
+                "servers": [
+                    {
+                        "url": "https://${AIOpsAPI}.execute-api.${AWS::Region}.amazonaws.com/dev"
+                    }
+                ],
+                "paths": {
+                    "/close-unwanted-port-for-ec2": {
+                        "post": {
+                            "summary": "Close a specific port on an EC2 instance",
+                            "description": "This API closes a specified port on the given EC2 instance.",
+                            "requestBody": {
+                                "content": {
+                                    "application/json": {
+                                        "schema": {
+                                            "$ref": "#/components/schemas/CloseUnwantedPortForEC2Request"
+                                        }
+                                    }
+                                },
+                                "required": true
+                            },
+                            "responses": {
+                                "200": {
+                                    "description": "Successful response",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/CloseUnwantedPortForEC2Response"
+                                            }
+                                        }
+                                    }
+                                },
+                                "404": {
+                                    "description": "Port not found open",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/ErrorResponse"
+                                            }
+                                        }
+                                    }
+                                },
+                                "500": {
+                                    "description": "Internal server error",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/ErrorResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "/find-ec2-with-specific-open-port": {
+                        "get": {
+                            "summary": "Get a list of EC2 instances with a specific port open",
+                            "description": "This API returns a list of EC2 instance IDs that have a specific port open in their security groups.",
+                            "parameters": [
+                                {
+                                    "name": "portNumber",
+                                    "in": "query",
+                                    "required": true,
+                                    "x-amzn-form-display-name": "Enter port number to check",
+                                    "schema": {
+                                        "type": "integer"
+                                    },
+                                    "description": "The port number to check for open ports on EC2 instances"
+                                }
+                            ],
+                            "responses": {
+                                "200": {
+                                    "description": "Successful response",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/EC2InstanceList"
+                                            }
+                                        }
+                                    }
+                                },
+                                "400": {
+                                    "description": "Bad request",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/ErrorResponse"
+                                            }
+                                        }
+                                    }
+                                },
+                                "500": {
+                                    "description": "Internal server error",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/ErrorResponse"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "/remove-public-access-from-s3-bucket": {
+                        "summary": "This API is used to block public access or restrict publ access to S3 buckets",
+                        "description": "This API is used to block public access or restrict publ access to S3 buckets",
+                        "post": {
+                            "summary": "This API is used to block public access or restrict publ access to S3 buckets",
+                            "description": "This API is used to block public access or restrict publ access to S3 buckets",
+                            "requestBody": {
+                                "content": {
+                                    "application/json": {
+                                        "schema": {
+                                            "$ref": "#/components/schemas/S3BucketRequest"
+                                        }
+                                    }
+                                },
+                                "required": true
+                            },
+                            "responses": {
+                                "200": {
+                                    "description": "Successful response",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/S3BucketResponse"
+                                            }
+                                        }
+                                    }
+                                },
+                                "400": {
+                                    "description": "Bad request",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/ErrorResponse1"
+                                            }
+                                        }
+                                    }
+                                },
+                                "500": {
+                                    "description": "Internal server error",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/ErrorResponse1"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "/find-s3-bucket-with-public-access": {
+                        "post": {
+                            "summary": "Check S3 buckets for public access",
+                            "description": "Takes a bucket prefix and returns a list of buckets with public access.",
+                            "requestBody": {
+                                "content": {
+                                    "application/json": {
+                                        "schema": {
+                                            "type": "object",
+                                            "properties": {
+                                                "bucketPrefix": {
+                                                    "type": "string",
+                                                    "description": "The prefix for S3 buckets to check."
+                                                }
+                                            },
+                                            "required": [
+                                                "bucketPrefix"
+                                            ]
+                                        },
+                                        "example": {
+                                            "bucketPrefix": "my-company-"
+                                        }
+                                    }
+                                },
+                                "required": true
+                            },
+                            "responses": {
+                                "200": {
+                                    "description": "Successful operation",
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "bucketPrefix_buckets": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "type": "string"
+                                                        },
+                                                        "description": "List of S3 buckets with public access."
+                                                    }
+                                                }
+                                            },
+                                            "example": {
+                                                "bucketPrefix_buckets": [
+                                                    "my-company-data",
+                                                    "my-company-public"
+                                                ]
+                                            }
+                                        }
+                                    }
+                                },
+                                "500": {
+                                    "description": "Internal Server Error"
+                                }
+                            }
+                        }
+                    }
+                },
+                "components": {
+                    "schemas": {
+                        "CloseUnwantedPortForEC2Request": {
+                            "type": "object",
+                            "required": [
+                                "instance_id",
+                                "port_to_close"
+                            ],
+                            "properties": {
+                                "instance_id": {
+                                    "type": "string",
+                                    "description": "The ID of the EC2 instance"
+                                },
+                                "port_to_close": {
+                                    "type": "integer",
+                                    "description": "The port number to close on the EC2 instance"
+                                }
+                            }
+                        },
+                        "CloseUnwantedPortForEC2Response": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "The result of the port closing operation"
+                                }
+                            }
+                        },
+                        "ErrorResponse": {
+                            "type": "object",
+                            "properties": {
+                                "error_code": {
+                                    "type": "integer",
+                                    "description": "Error code"
+                                },
+                                "error_message": {
+                                    "type": "string",
+                                    "description": "Error message"
+                                }
+                            }
+                        },
+                        "EC2InstanceList": {
+                            "type": "object",
+                            "properties": {
+                                "instances_with_port_open": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    },
+                                    "description": "List of EC2 instance IDs with specific ports open"
+                                }
+                            }
+                        },
+                        "S3BucketRequest": {
+                            "type": "object",
+                            "required": [
+                                "bucketName"
+                            ],
+                            "properties": {
+                                "bucketName": {
+                                    "type": "string",
+                                    "description": "The name of the S3 bucket to restrict public access"
+                                }
+                            }
+                        },
+                        "S3BucketResponse": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "A message indicating the result of the operation"
+                                }
+                            }
+                        },
+                        "ErrorResponse1": {
+                            "type": "object",
+                            "properties": {
+                                "message": {
+                                    "type": "string",
+                                    "description": "An error message describing the problem"
+                                }
+                            }
+                        }
+                    }
+                }
+              }
+        ApiSchemaType: OPEN_API_V3
+        Description: "This is a custom plugin API configuration"
+      DisplayName: AIOpsCustomPlugin
+      State: ENABLED
+      Type: CUSTOM
+
+Outputs:
+  AIOpsAPIEndpoint:
+    Description: "API Gateway endpoint URL for the dev stage of the AIOps API"
+    Value: !Sub "https://${AIOpsAPI}.execute-api.${AWS::Region}.amazonaws.com/dev"
+
+  QBusinessWebExperienceURL:
+    Description: "QBusinessWebExperience URL"
+    Value: !GetAtt QBusinessWebExperience.DefaultEndpoint
