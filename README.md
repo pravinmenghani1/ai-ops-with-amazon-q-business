@@ -72,13 +72,13 @@ Important: this application uses various AWS services and there are costs associ
 * The APIs are implemented using Amazon API Gateway and AWS Lambda functions. 
 
 
-Refer to the architecture diagram below:
+Refer to the following architecture diagram:
 
 ![End to End Architecture](images/architecture.png)
 
 
 ## Testing
-Follow the steps below to log into the chatbot and test it. Note that responses from large language models are non-deterministic. Hence, you may not get exact same response every time.
+Refer to the following steps to log into the chatbot and test it. Responses from large language models are non-deterministic. Hence, you may not get exact same response every time.
 
 1. Log into `QBusinessWebExperienceURL` from the `sam deploy` output using the user credential configured in the previous steps. 
 
@@ -86,7 +86,7 @@ Follow the steps below to log into the chatbot and test it. Note that responses 
 
     <img src="images/aiops-chatbot-test-0.png" width="750">
 
-3. [Enable public access on an Amazon S3 bucket](https://docs.aws.amazon.com/AmazonS3/latest/userguide/configuring-block-public-access-bucket.html). Note that this is done for testing purpose only, check your organization policies before performing this test. For this demo we have used a bucket named `aiops-chatbot-demo`.
+3. [Enable public access on an Amazon S3 bucket](https://docs.aws.amazon.com/AmazonS3/latest/userguide/configuring-block-public-access-bucket.html). This is done for testing purpose only, check your organization policies before performing this test. For this demo we have used a bucket named `aiops-chatbot-demo`.
 
 4. Return to AIOps Chatbot and enter a question such as:  Do I have any S3 bucket with public access?  Provide the bucket prefix to narrow down the search.
 
