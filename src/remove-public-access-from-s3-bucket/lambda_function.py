@@ -1,14 +1,15 @@
 import boto3
 import json
 
+# Create an S3 client
+s3 = boto3.client('s3')
+
 def lambda_handler(event, context):
     # Replace with the name of the S3 bucket
     body = json.loads(event['body'])
     BUCKET_NAME = body.get('bucketName')
     print (BUCKET_NAME)
 
-    # Create an S3 client
-    s3 = boto3.client('s3')
     try:
     # Set the public access block configuration
         response = s3.put_public_access_block(

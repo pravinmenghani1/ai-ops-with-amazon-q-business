@@ -1,9 +1,11 @@
 import boto3
 import json
 
+# Initialize the EC2 client
+ec2 = boto3.client('ec2')
+
 def lambda_handler(event, context):
-    # Initialize the EC2 client
-    ec2 = boto3.client('ec2')
+
     response_body={}
     # Get a list of all EC2 instances
     response = ec2.describe_instances()
@@ -28,11 +30,8 @@ def lambda_handler(event, context):
                     for ip_permission in security_group_details['SecurityGroups'][0]['IpPermissions']:
                         print(ip_permission)
                         if ip_permission['FromPort'] <= receivedPortNumberFormat and ip_permission['ToPort'] >= receivedPortNumberFormat:
-                            print("Found");
                             print(instance['InstanceId'])
                             instances_with_port_open.append(instance['InstanceId'])
-                            print("FoundX");
-                            print("1")
                             print(instances_with_port_open)
                             break
             except Exception as e:

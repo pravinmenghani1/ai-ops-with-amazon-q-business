@@ -1,6 +1,9 @@
 import boto3
 import json
 
+# Initialize the EC2 client
+ec2 = boto3.client('ec2')
+
 def lambda_handler(event, context):
     # Get the port number to close from the event
     body = json.loads(event['body'])
@@ -8,10 +11,6 @@ def lambda_handler(event, context):
     port_to_close = int(port_to_close_str)
     print (port_to_close)
     
-
-    # Initialize the EC2 client
-    ec2 = boto3.client('ec2')
-
     # Get the instance ID from the event
     instance_id = body.get('instance_id')
     print(instance_id)

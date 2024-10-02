@@ -1,15 +1,15 @@
 import boto3
 import json
 
-
+# Create an S3 client
+s3 = boto3.client('s3')
 
 def lambda_handler(event, context):
 
     body = json.loads(event['body'])
     bucketPrefix = body.get('bucketPrefix')
     print (bucketPrefix)
-    # Create an S3 client
-    s3 = boto3.client('s3')
+
     
     # Get a list of all S3 buckets
     response = s3.list_buckets()
@@ -35,8 +35,6 @@ def lambda_handler(event, context):
             except s3.exceptions.ClientError as e:
                 if e.response['Error']['Code'] == 'NoSuchPublicAccessBlockConfiguration':
                     print(e)
-                    # The bucket has public access enabled
-                    # bucketPrefix_buckets.append(bucket_name)
 
     # Return the list of buckets with public access
     print("Final")
