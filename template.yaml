@@ -6,7 +6,12 @@ Globals:
   Function:
     Timeout: 29
     MemorySize: 256
-
+# Take IAM Identity Center managing instance as input parameter
+Parameters:
+  IdentityCenterManagingInstanceId:
+    Type: String
+    Description: "IAM Identity Center managing instance Id"
+    
 Resources:
   AIOpsAPI:
     Type: AWS::Serverless::Api
@@ -151,14 +156,14 @@ Resources:
       AutoSubscriptionConfiguration:
         AutoSubscribe: ENABLED
         DefaultSubscriptionType: Q_LITE
-      IdentityCenterInstanceArn: arn:aws:sso:::instance/ssoins-72238235d6cbbb64
+      # IdentityCenterInstanceArn: arn:aws:sso:::instance/ssoins-72238235d6cbbb64
+      IdentityCenterInstanceArn: !Sub "arn:aws:sso:::instance/${IdentityCenterManagingInstanceId}"
       RoleArn: !GetAtt QBusinessAppRole.Arn
       Tags:
         - Key: "Environment"
           Value: "Dev"
         - Key: "Application"
           Value: "AIOps"
-
 
   QBusinessAppRole:
     Type: AWS::IAM::Role
