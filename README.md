@@ -37,6 +37,7 @@ Important: this application uses various AWS services and there are costs associ
 
    - Enter a stack name. 
    - Enter `us-east-1` as the AWS Region.
+   - You need to enter the IAM Identity Center's Managing instance id as Amazon Q setup needs this. Open [IAM Identity Center](https://console.aws.amazon.com/singlesignon/home) from console and copy the Managing Instance Id from the page to use in the prompts. ![IAM Identity Center Managing Id](images/iam-identiy-center-managing-instance.png)
    - Enter `y` for AWS Lambda functions not having authentication.  
    - Leave rest of the options as default.
 
