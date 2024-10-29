@@ -239,120 +239,79 @@ Resources:
             Action:
               - "sts:AssumeRole"
               - "sts:SetContext"
-      Policies:
-        - PolicyName: "QBusinessConversationPermission"
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: "Allow"
-                Action: 
-                  - "logs:CreateLogGroup"
-                  - "qbusiness:Chat"
-                  - "qbusiness:ChatSync"
-                  - "qbusiness:ListMessages"
-                  - "qbusiness:ListConversations"
-                  - "qbusiness:DeleteConversation"
-                  - "qbusiness:PutFeedback"
-                  - "qbusiness:GetWebExperience"
-                  - "qbusiness:GetApplication"
-                  - "qbusiness:ListPlugins"
-                  - "qbusiness:GetChatControlsConfiguration"
-                  - "qbusiness:ListRetrievers"
-                Resource: "*"
-        - PolicyName: "QBusinessRetrieverPermission"
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: "Allow"
-                Action: "qbusiness:GetRetriever"
-                Resource: "*"
-        - PolicyName: "QBusinessKMSDecryptPermissions"
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: "Allow"
-                Action: 
-                  - "kms:Decrypt"
-                Resource: "*"
-        - PolicyName: "QAppsResourceAgnosticPermissions"
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: "Allow"
-                Action: 
-                  - "qapps:CreateQApp"
-                  - "qapps:PredictQApp"
-                  - "qapps:PredictProblemStatementFromConversation"
-                  - "qapps:PredictQAppFromProblemStatement"
-                  - "qapps:ListQApps"
-                  - "qapps:ListLibraryItems"
-                  - "qapps:CreateSubscriptionToken"
-                Resource: "*"
-        - PolicyName: "QAppsAppUniversalPermissions"
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: "Allow"
-                Action: 
-                  - "qapps:DisassociateQAppFromUser"
-                Resource: "*"    
-        - PolicyName: "QAppsAppOwnerPermissions"
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: "Allow"
-                Action:
-                  - "qapps:GetQApp"
-                  - "qapps:CopyQApp"
-                  - "qapps:UpdateQApp"
-                  - "qapps:DeleteQApp"
-                  - "qapps:ImportDocument"
-                  - "qapps:ImportDocumentToQApp"
-                  - "qapps:CreateLibraryItem"
-                  - "qapps:UpdateLibraryItem"
-                  - "qapps:StartQAppSession"
-                Resource: "*"    
-        - PolicyName: "QAppsPublishedAppPermissions"
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: "Allow"
-                Action:
-                  - "qapps:GetQApp"
-                  - "qapps:CopyQApp"
-                  - "qapps:AssociateQAppWithUser"
-                  - "qapps:GetLibraryItem"
-                  - "qapps:CreateLibraryItemReview"
-                  - "qapps:AssociateLibraryItemReview"
-                  - "qapps:DisassociateLibraryItemReview"
-                  - "qapps:StartQAppSession"
-                Resource: "*"  
-        - PolicyName: "QAppsAppSessionModeratorPermissions"
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: "Allow"
-                Action:
-                  - "qapps:ImportDocument"
-                  - "qapps:ImportDocumentToQAppSession"
-                  - "qapps:GetQAppSession"
-                  - "qapps:GetQAppSessionMetadata"
-                  - "qapps:UpdateQAppSession"
-                  - "qapps:UpdateQAppSessionMetadata"
-                  - "qapps:StopQAppSession"
-                Resource: "*"  
-        - PolicyName: "QAppsSharedAppSessionPermissions"
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: "Allow"
-                Action:
-                  - "qapps:ImportDocument"
-                  - "qapps:ImportDocumentToQAppSession"
-                  - "qapps:GetQAppSession"
-                  - "qapps:GetQAppSessionMetadata"
-                  - "qapps:UpdateQAppSession"
-                Resource: "*"  
+  QBusinessWebExperiencePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: "QBusinessWebExperiencePolicy"
+      Roles:
+        - !Ref QBusinessWebExperienceRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          # - Effect: "Allow"
+          #   Action: "*"
+          #   Resource: "*"
+          # - Effect: "Allow"
+          #   Action: "qbusiness:*"
+          #   Resource: !GetAtt QBusinessApp.ApplicationArn
+          # - Effect: "Allow"
+          #   Action: "logs:CreateLogGroup"
+          #   Resource: "arn:aws:logs:*:*:log-group:/aws/qbusiness/*"
+          # - Effect: "Allow"
+          #   Action: 
+          #     - "logs:PutLogEvents"
+          #     - "logs:CreateLogStream"
+          #     - "logs:DescribeLogStreams"
+          #   Resource: "arn:aws:logs:*:*:log-group:/aws/qbusiness/*:log-stream:*"
+          - Effect: "Allow"
+            Action: 
+              - "qbusiness:Chat"
+              - "qbusiness:ChatSync"
+              - "qbusiness:ListMessages"
+              - "qbusiness:ListConversations"
+              - "qbusiness:DeleteConversation"
+              - "qbusiness:PutFeedback"
+              - "qbusiness:GetWebExperience"
+              - "qbusiness:GetApplication"
+              - "qbusiness:ListPlugins"
+              - "qbusiness:GetChatControlsConfiguration"
+              - "qbusiness:ListRetrievers"
+            Resource: !GetAtt QBusinessApp.ApplicationArn
+          - Effect: "Allow"
+            Action: "qbusiness:GetRetriever"
+            Resource: !GetAtt QBusinessApp.ApplicationArn
+
+      # Policies:
+      #   - PolicyName: "QBusinessConversationPermission"
+      #     PolicyDocument:
+      #       Version: "2012-10-17"
+      #       Statement:
+      #         - Effect: "Allow"
+      #           Action: 
+      #             - "logs:CreateLogGroup"
+      #             - "qbusiness:Chat"
+      #             - "qbusiness:ChatSync"
+      #             - "qbusiness:ListMessages"
+      #             - "qbusiness:ListConversations"
+      #             - "qbusiness:DeleteConversation"
+      #             - "qbusiness:PutFeedback"
+      #             - "qbusiness:GetWebExperience"
+      #             - "qbusiness:GetApplication"
+      #             - "qbusiness:ListPlugins"
+      #             - "qbusiness:GetChatControlsConfiguration"
+      #             - "qbusiness:ListRetrievers"
+      #           Resource: !GetAtt QBusinessApp.ApplicationArn
+      #   - PolicyName: "QBusinessRetrieverPermission"
+      #     PolicyDocument:
+      #       Version: "2012-10-17"
+      #       Statement:
+      #         - Effect: "Allow"
+      #           Action: "qbusiness:GetRetriever"
+      #           Resource: !GetAtt QBusinessApp.ApplicationArn
+
+
+
+# ##################
   QBusinessCustomPlugin:            
     Type: AWS::QBusiness::Plugin
     Properties:
