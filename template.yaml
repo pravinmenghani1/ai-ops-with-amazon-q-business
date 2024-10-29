@@ -156,7 +156,6 @@ Resources:
       AutoSubscriptionConfiguration:
         AutoSubscribe: ENABLED
         DefaultSubscriptionType: Q_LITE
-      # IdentityCenterInstanceArn: arn:aws:sso:::instance/ssoins-72238235d6cbbb64
       IdentityCenterInstanceArn: !Sub "arn:aws:sso:::instance/${IdentityCenterManagingInstanceId}"
       RoleArn: !GetAtt QBusinessAppRole.Arn
       Tags:
@@ -177,44 +176,32 @@ Resources:
                 - "qbusiness.amazonaws.com"
             Action:
               - "sts:AssumeRole"
-      Policies:
-        - PolicyName: "QBusinessAppPolicy"
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: "Allow"
-                Action: "*"
-                Resource: "*"
-        - PolicyName: "QBusinessCreateLogGroupPermission"
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: "Allow"
-                Action: "logs:CreateLogGroup"
-                Resource: "arn:aws:logs:*:*:log-group:/aws/qbusiness/*"
-                Condition:
-                  StringEquals:
-                    "aws:ResourceAccount": "${aws:PrincipalAccount}"
-        - PolicyName: "QBusinessDescribeLogGroupsPermission"
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: "Allow"
-                Action: "logs:DescribeLogGroups"
-                Resource: "arn:aws:logs:*:*:log-group:*"
-        - PolicyName: "QBusinessLogStreamPermission"
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: "Allow"
-                Action: 
-                  - "logs:PutLogEvents"
-                  - "logs:CreateLogStream"
-                  - "logs:DescribeLogStreams"
-                Resource: "arn:aws:logs:*:*:log-group:/aws/qbusiness/*:log-stream:*"
-                Condition:
-                  StringEquals:
-                    "aws:ResourceAccount": "${aws:PrincipalAccount}"
+  QBusinessAppPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: "QBusinessAppPolicy"
+      Roles:
+        - !Ref QBusinessAppRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action: "logs:DescribeLogGroups"
+            Resource: "arn:aws:logs:*:*:log-group:*"
+          - Effect: "Allow"
+            Action: "logs:CreateLogGroup"
+            Resource: "arn:aws:logs:*:*:log-group:/aws/qbusiness/*"
+            Condition:
+              StringEquals:
+                "aws:ResourceAccount": "${aws:PrincipalAccount}"    
+          - Effect: "Allow"
+            Action: 
+              - "logs:CreateLogStream"
+              - "logs:DescribeLogStreams"
+            Resource: "arn:aws:logs:*:*:log-group:/aws/qbusiness/*:log-stream:*"
+            Condition:
+              StringEquals:
+                "aws:ResourceAccount": "${aws:PrincipalAccount}"            
 
   QBusinessWebExperience:
     Type: AWS::QBusiness::WebExperience
@@ -224,7 +211,6 @@ Resources:
         SamplePromptsControlMode: ENABLED
         Title: "AIOps Chatbot"
         WelcomeMessage: "Welcome to AIOps Chatbot. How can I help you?"
-
 
   QBusinessWebExperienceRole:
     Type: AWS::IAM::Role
@@ -248,21 +234,6 @@ Resources:
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
-          # - Effect: "Allow"
-          #   Action: "*"
-          #   Resource: "*"
-          # - Effect: "Allow"
-          #   Action: "qbusiness:*"
-          #   Resource: !GetAtt QBusinessApp.ApplicationArn
-          # - Effect: "Allow"
-          #   Action: "logs:CreateLogGroup"
-          #   Resource: "arn:aws:logs:*:*:log-group:/aws/qbusiness/*"
-          # - Effect: "Allow"
-          #   Action: 
-          #     - "logs:PutLogEvents"
-          #     - "logs:CreateLogStream"
-          #     - "logs:DescribeLogStreams"
-          #   Resource: "arn:aws:logs:*:*:log-group:/aws/qbusiness/*:log-stream:*"
           - Effect: "Allow"
             Action: 
               - "qbusiness:Chat"
@@ -281,37 +252,6 @@ Resources:
             Action: "qbusiness:GetRetriever"
             Resource: !GetAtt QBusinessApp.ApplicationArn
 
-      # Policies:
-      #   - PolicyName: "QBusinessConversationPermission"
-      #     PolicyDocument:
-      #       Version: "2012-10-17"
-      #       Statement:
-      #         - Effect: "Allow"
-      #           Action: 
-      #             - "logs:CreateLogGroup"
-      #             - "qbusiness:Chat"
-      #             - "qbusiness:ChatSync"
-      #             - "qbusiness:ListMessages"
-      #             - "qbusiness:ListConversations"
-      #             - "qbusiness:DeleteConversation"
-      #             - "qbusiness:PutFeedback"
-      #             - "qbusiness:GetWebExperience"
-      #             - "qbusiness:GetApplication"
-      #             - "qbusiness:ListPlugins"
-      #             - "qbusiness:GetChatControlsConfiguration"
-      #             - "qbusiness:ListRetrievers"
-      #           Resource: !GetAtt QBusinessApp.ApplicationArn
-      #   - PolicyName: "QBusinessRetrieverPermission"
-      #     PolicyDocument:
-      #       Version: "2012-10-17"
-      #       Statement:
-      #         - Effect: "Allow"
-      #           Action: "qbusiness:GetRetriever"
-      #           Resource: !GetAtt QBusinessApp.ApplicationArn
-
-
-
-# ##################
   QBusinessCustomPlugin:            
     Type: AWS::QBusiness::Plugin
     Properties:
