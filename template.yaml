@@ -17,6 +17,17 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       StageName: dev
+      Auth:
+        ApiKeyRequired: true  # Enable API key authentication
+        UsagePlan:
+          CreateUsagePlan: PER_API
+          Description: Usage plan for this API
+          Quota:
+            Limit: 1000
+            Period: MONTH
+          Throttle:
+            BurstLimit: 100
+            RateLimit: 50
 
   FindS3BucketsWithPublicAccessFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
@@ -48,6 +59,8 @@ Resources:
             Method: post
             RestApiId:
               Ref: AIOpsAPI
+            Auth:
+              ApiKeyRequired: true  # Enable API key authentication for this endpoint
 
   RemovePublicAcessFromS3BucketFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
