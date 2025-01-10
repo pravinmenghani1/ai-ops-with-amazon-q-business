@@ -20,7 +20,7 @@ Important: This application uses various AWS services and there are costs associ
 
 1. Create a new directory, navigate to that directory in a terminal and clone the GitHub repository:
     ``` 
-    git clone https://github.com/aws-samples/ai-ops-with-amazon-q-business.git
+    git clone https://github.com/pravinmenghani1/ai-ops-with-amazon-q-business.git
     ```
 
 2. Change directory to the pattern directory:
